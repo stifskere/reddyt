@@ -10,4 +10,8 @@ flexi_logger = "0.31.2"
 log = "0.4.27"
 reqwest = "0.12.23"
 serde = { version = "1.0.219", features = ["derive"] }
+sqlx = { version = "0.8.6", features = ["postgres"] }
 thiserror = "2.0.16"
+
+[build-dependencies]
+dotenvy = "0.15.7"
