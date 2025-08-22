@@ -1,0 +1,38 @@
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: ./cd/dev.dockerfile
+    volumes:
+      - ../backend:/app/backend/
+      - ../frontend:/app/frontend/
+      - /app/target
+      - /app/frontend/dist
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/reddyt
+      DATABASE_MIGRATIONS: ./migrations
+
+      REDIS_URL: redis://dragonfly:6379
+
+      BACKEND_URL: http://localhost:8081
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: reddyt
+    ports:
+      - "5432:5432"
+    volumes:
+      - reddyt-pgdata:/var/lib/postgresql/data
+
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    ports:
+      - "6379:6379"
+
+volumes:
+  reddyt-pgdata:

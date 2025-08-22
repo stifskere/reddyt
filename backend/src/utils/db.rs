@@ -32,7 +32,7 @@ pub async fn get_db_connection<'r>() -> Result<&'r Pool<Postgres>, DbConnectionE
         .connect(env!("DATABASE_URL"))
         .await?;
 
-    Migrator::new(Path::new(&env!("DATABASE_MIGRATIONS")))
+    Migrator::new(Path::new(&option_env!("DATABASE_MIGRATIONS").unwrap_or("./migrations")))
         .await?
         .run(&pool)
         .await?;
