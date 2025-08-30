@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "backend",
-    "frontend",
+    "core/backend",
+    "core/frontend",
 ]
 resolver = "3"

@@ -2,7 +2,7 @@ services:
   dev:
     build:
       context: ..
-      dockerfile: ./cd/dev.dockerfile
+      dockerfile: ./docker/dev.dockerfile
     volumes:
       - ../backend:/app/backend/
       - ../frontend:/app/frontend/
