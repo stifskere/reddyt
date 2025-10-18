@@ -2,7 +2,8 @@ use app::App;
 use tracing::{info, Level as TracingLevel};
 use tracing_subscriber::filter::Targets;
 use tracing_subscriber::fmt::layer as tracing_layer;
-use tracing_subscriber::{prelude::*, registry as tracing_registry};
+use tracing_subscriber::{registry as tracing_registry};
+use tracing_subscriber::prelude::*;
 use tracing_web::MakeWebConsoleWriter;
 use yew::Renderer;
 

@@ -1,38 +1,33 @@
 services:
-  dev:
+  reddyt-main:
+    container_name: reddyt
     build:
-      context: ..
-      dockerfile: ./docker/dev.dockerfile
-    volumes:
-      - ../backend:/app/backend/
-      - ../frontend:/app/frontend/
-      - /app/target
-      - /app/frontend/dist
+      dockerfile: dev.dockerfile
+    environment:
+      DATABASE_URL: postgres://reddyt:reddyt@reddyt-database:5432/reddyt
     ports:
-      - "8080:8080"
+      - 8080:8080
+    volumes:
+      - ../:/home/dev/reddyt
+      - reddyt-cargo-target:/home/dev/reddyt/target
+      - reddyt-cargo-dist:/home/dev/reddyt/dist
+    depends_on:
+      - reddyt-database
+
+  reddyt-database:
+    container_name: reddyt_database
+    image: postgres:18
     environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/reddyt
-      DATABASE_MIGRATIONS: ./migrations
-
-      REDIS_URL: redis://dragonfly:6379
-
-      BACKEND_URL: http://localhost:8081
-
-  postgres:
-    image: postgres:17
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: reddyt
+      POSTGRES_PASSWORD: reddyt
       POSTGRES_DB: reddyt
+      PGDATA: /data/postgres
     ports:
       - "5432:5432"
     volumes:
-      - reddyt-pgdata:/var/lib/postgresql/data
-
-  dragonfly:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
-    ports:
-      - "6379:6379"
+      - reddyt-database:/data/postgres
 
 volumes:
-  reddyt-pgdata:
+  reddyt-cargo-target:
+  reddyt-cargo-dist:
+  reddyt-database:
