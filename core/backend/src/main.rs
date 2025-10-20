@@ -3,6 +3,8 @@ use thiserror::Error;
 
 use std::io::Error as IoError;
 
+use crate::routes::authentication::authentication_scope;
+
 mod routes;
 mod utils;
 
@@ -16,6 +18,7 @@ enum AppError {
 async fn main() -> Result<(), AppError> {
     HttpServer::new(|| {
         App::new()
+            .service(authentication_scope())
     })
         .bind(("0.0.0.0", 8081))?
         .run()
