@@ -9,6 +9,7 @@ actix_failwrap = "1.0.3"
 base64 = "0.22.1"
 chrono = { version = "0.4.42", features = ["serde"] }
 dyn_path = "1.0.7"
+envconfig = "0.11.0"
 flexi_logger = "0.31.2"
 # Updating this is impossible as last version is broken.
 jsonwebtoken = "=9.0.0"
