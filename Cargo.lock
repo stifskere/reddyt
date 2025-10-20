@@ -186,6 +186,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix_failwrap"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1711e2f60fa5728bd5a56da023a7e43b4f43ac4d12b5613e0bf0b972bf09147e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "strsim",
+ "syn 2.0.106",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -277,6 +289,8 @@ name = "backend"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "actix_failwrap",
+ "base64",
  "dotenvy",
  "dyn_path",
  "flexi_logger",
@@ -2878,6 +2892,12 @@ dependencies = [
  "unicode-normalization",
  "unicode-properties",
 ]
+
+[[package]]
+name = "strsim"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "subtle"
