@@ -1,5 +1,5 @@
 use actix_failwrap::{proof_route, ErrorResponse};
-use actix_web::cookie::{Cookie};
+use actix_web::cookie::Cookie;
 use actix_web::cookie::time::Duration;
 use actix_web::{HttpResponse, Scope};
 use actix_web::web::scope;
@@ -17,6 +17,7 @@ enum AuthenticationRequestError {
 pub fn authentication_scope() -> Scope {
     scope("/authentication")
         .service(login_route)
+        .service(logout_route)
 }
 
 #[proof_route("POST /login")]
@@ -41,4 +42,16 @@ async fn login_route(auth: OptionalAuth) -> Result<HttpResponse, AuthenticationR
     }
 }
 
-
+#[proof_route("POST /logout")]
+async fn logout_route(auth: OptionalAuth) -> Result<HttpResponse, AuthenticationRequestError> {
+    auth.token()
+        .map(|_| HttpResponse::NoContent()
+            .cookie({
+                let mut cookie = Cookie::named(COOKIE_KEY);
+                cookie.make_removal();
+                cookie
+            })
+            .finish()
+        )
+        .ok_or(AuthenticationRequestError::Unauthorized)
+}
