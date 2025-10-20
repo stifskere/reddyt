@@ -1,13 +1,35 @@
 use std::env::var;
 use std::future::{ready, Ready};
+use std::result;
+use std::sync::OnceLock;
 
+use actix_web::error::ErrorInternalServerError;
 use actix_web::{FromRequest, HttpRequest, Error as ActixError};
 use actix_web::dev::Payload;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
+use chrono::{Utc, Duration};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, Header, Validation};
+use rand::rand_core::OsError;
+use rand::rngs::{OsRng, StdRng};
+use rand::distr::{Alphanumeric, SampleString};
+use rand::SeedableRng;
+use serde::{Deserialize, Serialize};
 
+/// The environment variable key for the email.
 const EMAIL_KEY: &str = "RYT_ADMIN_EMAIL";
+/// The environment variable key for the passowrd.
 const PASSOWRD_KEY: &str = "RYT_ADMIN_PASSWORD";
+
+/// The claims that the application JWT consists of.
+///
+/// The email is a filler and the expiration is
+/// managed by the jwt crate.
+#[derive(Serialize, Deserialize, Debug)]
+struct OptionalAuthClaims {
+    email: String,
+    exp: usize
+}
 
 /// `OptionalAuth` is an Actix Web extractor
 /// that handles optional basic authentication.
@@ -22,27 +44,32 @@ const PASSOWRD_KEY: &str = "RYT_ADMIN_PASSWORD";
 /// attempt will be ignored and the `authenticated` field
 /// will be set to false.
 pub struct OptionalAuth {
-    authenticated: bool
+    token: Option<String>
 }
 
 impl OptionalAuth {
     /// Constructor function, shortener for
     /// `OptionalAuth { authenticated: true|false }`
     #[inline]
-    const fn new(authenticated: bool) -> Self {
+    const fn new(token: Option<String>) -> Self {
         Self {
-            authenticated
+            token
         }
     }
 
-    /// Returns whether the user is authenticated
-    /// or not.
-    #[inline]
-    pub const fn authenticated(&self) -> bool {
-        self.authenticated
+    /// If he user is authenticated this returns the
+    /// issued JWT token, otherwise None.
+    ///
+    /// The provided token is only for use within
+    /// this structure.
+    pub fn token(&self) -> Option<&String> {
+        self.token.as_ref()
     }
 }
 
+// TODO: Refactor this and make a wrapper for ready
+// that uses a closure to be able to use `?` with
+// actix_failwrap.
 impl FromRequest for OptionalAuth {
     type Error = ActixError;
 
@@ -50,27 +77,107 @@ impl FromRequest for OptionalAuth {
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let Ok(env_user) = var("PORTFOLIO_USER") else {
-            return ready(Ok(OptionalAuth::new(false)));
+            return ready(Ok(OptionalAuth::new(None)));
         };
 
         let Ok(env_password) = var("PORTFOLIO_PASSWORD") else {
-            return ready(Ok(OptionalAuth::new(false)));
+            return ready(Ok(OptionalAuth::new(None)));
         };
 
-        let authorized = req
+        let Some(header_value) = req
             .headers()
             .get("Authorization")
             .and_then(|header| header.to_str().ok())
-            .and_then(|auth| auth.strip_prefix("Basic "))
-            .and_then(|encoded| BASE64_STANDARD.decode(encoded).ok())
-            .and_then(|decoded| String::from_utf8(decoded).ok())
-            .and_then(|creds| {
-                let creds = creds.split_once(':');
-                Some((creds?.0.to_string(), creds?.1.to_string()))
-            })
-            .map(|(user, pass)| user == env_user && pass == env_password)
-            .unwrap_or(false);
+        else {
+            return ready(Ok(OptionalAuth::new(None)));
+        };
 
-        ready(Ok(OptionalAuth::new(authorized)))
+        let Ok(jwt_secret) = get_jwt_secret() else {
+            return ready(Err(ErrorInternalServerError(
+                "Error while generating JWT secret."
+            )));
+        };
+
+        if header_value.starts_with("Basic ") {
+            let authorized = header_value
+                .strip_prefix("Basic ")
+                .and_then(|encoded| BASE64_STANDARD.decode(encoded).ok())
+                .and_then(|decoded| String::from_utf8(decoded).ok())
+                .and_then(|creds| {
+                    let creds = creds.split_once(':');
+                    Some((creds?.0.to_string(), creds?.1.to_string()))
+                })
+                .map(|(user, pass)| user == env_user && pass == env_password)
+                .unwrap_or(false);
+
+            if !authorized {
+                return ready(Ok(OptionalAuth::new(None)));
+            }
+
+            let Some(expiration) = Utc::now()
+                .checked_add_signed(Duration::hours(3))
+            else {
+                return ready(Err(ErrorInternalServerError(
+                    "Error while generating JWT expiration."
+                )));
+            };
+
+            let jwt_claims = OptionalAuthClaims {
+                email: env_user.clone(),
+                exp: expiration.timestamp() as usize
+            };
+
+            let Ok(jwt_token) = encode(
+                &Header::default(),
+                jwt_claims,
+                jwt_secret
+            ) else {
+                return ready(Err(ErrorInternalServerError(
+                    "Error while signing JWT payload."
+                )));
+            };
+
+            return ready(Ok(OptionalAuth::new(Some(
+                BASE64_STANDARD.encode(jwt_token)
+            ))));
+        } else if header_value.starts_with("Bearer ") {
+            let Some(jwt_token) = header_value.strip_prefix("Bearer ") else {
+                return ready(Ok(OptionalAuth::new(None)));
+            };
+
+            let Ok(decoded_jwt_token) = BASE64_STANDARD.decode(jwt_token) else {
+                return ready(Ok(OptionalAuth::new(None)));
+            };
+
+            let result = decode::<OptionalAuthClaims>(
+                decoded_jwt_token,
+                &DecodingKey::from_secret(jwt_secret),
+                &Validation::new(Algorithm::HS256)
+            );
+
+            return ready(Ok(OptionalAuth::new({
+                result
+                    .ok()
+                    .map(|_| jwt_token)
+            })));
+        }
+
+
+        return ready(Ok(OptionalAuth::new(None)));
     }
+}
+
+
+fn get_jwt_secret() -> Result<&'static String, OsError> {
+    static SECRET: OnceLock<String> = OnceLock::new();
+
+    let mut rng = StdRng::try_from_rng(&mut OsRng)?;
+
+    Ok(
+        SECRET
+            .get_or_init(|| {
+                Alphanumeric
+                    .sample_string(&mut rng, 32)
+            })
+    )
 }
