@@ -1,8 +1,8 @@
-use std::env::var;
 use std::future::{ready, Ready};
 use std::sync::OnceLock;
 
 use actix_web::error::ErrorInternalServerError;
+use actix_web::web::Data;
 use actix_web::{FromRequest, HttpRequest, Error as ActixError};
 use actix_web::dev::Payload;
 use base64::prelude::BASE64_STANDARD;
@@ -15,10 +15,8 @@ use rand::distr::{Alphanumeric, SampleString};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
-/// The environment variable key for the email.
-const EMAIL_KEY: &str = "RYT_ADMIN_EMAIL";
-/// The environment variable key for the passowrd.
-const PASSOWRD_KEY: &str = "RYT_ADMIN_PASSWORD";
+use crate::utils::application::context::AppContext;
+
 /// The authentication cookie key
 pub const COOKIE_KEY: &str = "authentication";
 /// How long until the authentication session expires.
@@ -88,8 +86,9 @@ impl FromRequest for OptionalAuth {
             };
         }
 
-        ignore_error!(Ok(env_user) = var(EMAIL_KEY));
-        ignore_error!(Ok(env_password) = var(PASSOWRD_KEY));
+        let Some(app_context) = req.app_data::<Data<AppContext>>() else {
+            return ready(Err(ErrorInternalServerError("Couldn't load application context.")));
+        };
 
         ignore_error!(
             Some(provided_auth) = req
@@ -113,11 +112,14 @@ impl FromRequest for OptionalAuth {
                 .strip_prefix("Basic ")
                 .and_then(|encoded| BASE64_STANDARD.decode(encoded).ok())
                 .and_then(|decoded| String::from_utf8(decoded).ok())
-                .and_then(|creds| {
-                    let creds = creds.split_once(':');
-                    Some((creds?.0.to_string(), creds?.1.to_string()))
+                .map(|creds| {
+                    if let Some((email, password)) = creds.split_once(':') {
+                        email == app_context.config().admin_email()
+                        && password == app_context.config().admin_password()
+                    } else {
+                        false
+                    }
                 })
-                .map(|(user, pass)| user == env_user && pass == env_password)
                 .unwrap_or(false);
 
             if !authorized {
@@ -133,7 +135,7 @@ impl FromRequest for OptionalAuth {
             };
 
             let jwt_claims = OptionalAuthClaims {
-                email: env_user.clone(),
+                email: app_context.config().admin_email().to_string(),
                 exp: expiration.timestamp() as usize
             };
 
