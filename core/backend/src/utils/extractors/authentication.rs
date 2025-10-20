@@ -1,6 +1,5 @@
 use std::env::var;
 use std::future::{ready, Ready};
-use std::result;
 use std::sync::OnceLock;
 
 use actix_web::error::ErrorInternalServerError;
@@ -9,7 +8,7 @@ use actix_web::dev::Payload;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use chrono::{Utc, Duration};
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, Header, Validation};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use rand::rand_core::OsError;
 use rand::rngs::{OsRng, StdRng};
 use rand::distr::{Alphanumeric, SampleString};
@@ -20,6 +19,10 @@ use serde::{Deserialize, Serialize};
 const EMAIL_KEY: &str = "RYT_ADMIN_EMAIL";
 /// The environment variable key for the passowrd.
 const PASSOWRD_KEY: &str = "RYT_ADMIN_PASSWORD";
+/// The authentication cookie key
+pub const COOKIE_KEY: &str = "authentication";
+/// How long until the authentication session expires.
+pub const AUTH_EXPIRATION_HOURS: i64 = 3;
 
 /// The claims that the application JWT consists of.
 ///
@@ -67,30 +70,37 @@ impl OptionalAuth {
     }
 }
 
-// TODO: Refactor this and make a wrapper for ready
-// that uses a closure to be able to use `?` with
-// actix_failwrap.
 impl FromRequest for OptionalAuth {
     type Error = ActixError;
 
     type Future = Ready<Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
-        let Ok(env_user) = var("PORTFOLIO_USER") else {
-            return ready(Ok(OptionalAuth::new(None)));
-        };
+        /// Client errors are ignored for security,
+        /// if there is a missmatch in how the authentication
+        /// should be passed, the back-end will act like it
+        /// wasn't passed at all.
+        macro_rules! ignore_error {
+            ($sel:pat = $expr:expr) => {
+                let $sel = $expr else {
+                    return ready(Ok(OptionalAuth::new(None)));
+                };
+            };
+        }
 
-        let Ok(env_password) = var("PORTFOLIO_PASSWORD") else {
-            return ready(Ok(OptionalAuth::new(None)));
-        };
+        ignore_error!(Ok(env_user) = var(EMAIL_KEY));
+        ignore_error!(Ok(env_password) = var(PASSOWRD_KEY));
 
-        let Some(header_value) = req
-            .headers()
-            .get("Authorization")
-            .and_then(|header| header.to_str().ok())
-        else {
-            return ready(Ok(OptionalAuth::new(None)));
-        };
+        ignore_error!(
+            Some(provided_auth) = req
+                .headers()
+                .get("Authorization")
+                .and_then(|header| header.to_str().ok())
+                .map(|header| header.to_string())
+                .or_else(|| req.cookie(COOKIE_KEY)
+                    .map(|value| value.to_string())
+                )
+        );
 
         let Ok(jwt_secret) = get_jwt_secret() else {
             return ready(Err(ErrorInternalServerError(
@@ -98,8 +108,8 @@ impl FromRequest for OptionalAuth {
             )));
         };
 
-        if header_value.starts_with("Basic ") {
-            let authorized = header_value
+        if provided_auth.starts_with("Basic ") {
+            let authorized = provided_auth
                 .strip_prefix("Basic ")
                 .and_then(|encoded| BASE64_STANDARD.decode(encoded).ok())
                 .and_then(|decoded| String::from_utf8(decoded).ok())
@@ -115,7 +125,7 @@ impl FromRequest for OptionalAuth {
             }
 
             let Some(expiration) = Utc::now()
-                .checked_add_signed(Duration::hours(3))
+                .checked_add_signed(Duration::hours(AUTH_EXPIRATION_HOURS))
             else {
                 return ready(Err(ErrorInternalServerError(
                     "Error while generating JWT expiration."
@@ -129,8 +139,8 @@ impl FromRequest for OptionalAuth {
 
             let Ok(jwt_token) = encode(
                 &Header::default(),
-                jwt_claims,
-                jwt_secret
+                &jwt_claims,
+                &EncodingKey::from_secret(jwt_secret.as_bytes())
             ) else {
                 return ready(Err(ErrorInternalServerError(
                     "Error while signing JWT payload."
@@ -140,25 +150,25 @@ impl FromRequest for OptionalAuth {
             return ready(Ok(OptionalAuth::new(Some(
                 BASE64_STANDARD.encode(jwt_token)
             ))));
-        } else if header_value.starts_with("Bearer ") {
-            let Some(jwt_token) = header_value.strip_prefix("Bearer ") else {
-                return ready(Ok(OptionalAuth::new(None)));
-            };
-
-            let Ok(decoded_jwt_token) = BASE64_STANDARD.decode(jwt_token) else {
-                return ready(Ok(OptionalAuth::new(None)));
-            };
+        } else if provided_auth.starts_with("Bearer ") {
+            ignore_error!(Some(jwt_token) = provided_auth.strip_prefix("Bearer "));
+            ignore_error!(
+                Some(decoded_jwt_token) = BASE64_STANDARD
+                    .decode(jwt_token)
+                    .ok()
+                    .and_then(|token| String::from_utf8(token).ok())
+            );
 
             let result = decode::<OptionalAuthClaims>(
-                decoded_jwt_token,
-                &DecodingKey::from_secret(jwt_secret),
+                &decoded_jwt_token,
+                &DecodingKey::from_secret(jwt_secret.as_bytes()),
                 &Validation::new(Algorithm::HS256)
             );
 
             return ready(Ok(OptionalAuth::new({
                 result
                     .ok()
-                    .map(|_| jwt_token)
+                    .map(|_| jwt_token.to_string())
             })));
         }
 
@@ -166,7 +176,6 @@ impl FromRequest for OptionalAuth {
         return ready(Ok(OptionalAuth::new(None)));
     }
 }
-
 
 fn get_jwt_secret() -> Result<&'static String, OsError> {
     static SECRET: OnceLock<String> = OnceLock::new();
