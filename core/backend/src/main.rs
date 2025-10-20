@@ -1,8 +1,9 @@
-use actix_web::{web::Path, get, main, web::get, App, HttpResponse, HttpServer};
+use actix_web::{main, App, HttpServer};
 use thiserror::Error;
 
 use std::io::Error as IoError;
 
+mod routes;
 mod utils;
 
 #[derive(Error, Debug)]
@@ -11,16 +12,10 @@ enum AppError {
     Server(#[from] IoError)
 }
 
-#[get("/test")]
-async fn test() -> HttpResponse {
-    HttpResponse::Ok().body("Funciona!!!!")
-}
-
 #[main]
 async fn main() -> Result<(), AppError> {
     HttpServer::new(|| {
         App::new()
-            .service(test)
     })
         .bind(("0.0.0.0", 8081))?
         .run()
