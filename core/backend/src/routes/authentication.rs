@@ -8,6 +8,7 @@ use thiserror::Error;
 use crate::utils::errors::formatters::json_formatter;
 use crate::utils::extractors::authentication::{OptionalAuth, COOKIE_KEY};
 
+/// Holds errors related to authentication trough HTTP.
 #[derive(ErrorResponse, Error, Debug)]
 #[transform_response(json_formatter)]
 enum AuthenticationRequestError {
@@ -16,12 +17,18 @@ enum AuthenticationRequestError {
     Unauthorized
 }
 
+/// The exported scope for this module,
+/// it contains login and logout for the admin
+/// panel.
 pub fn authentication_scope() -> Scope {
     scope("/authentication")
         .service(login_route)
         .service(logout_route)
 }
 
+/// This route makes use of the `OptionalAuth` middleware
+/// to generate a JWT, if applicable sets the JWT as a
+/// cookie.
 #[proof_route("POST /login")]
 async fn login_route(auth: OptionalAuth) -> Result<HttpResponse, AuthenticationRequestError> {
     match auth.token() {
@@ -44,6 +51,13 @@ async fn login_route(auth: OptionalAuth) -> Result<HttpResponse, AuthenticationR
     }
 }
 
+/// This route makes use of the `OptionalAuth` middleware
+/// to know whether the user is authenticated or not
+/// and removes the cookie if it's the case.
+///
+/// XXX: This does not check the authentication origin,
+/// setting a cookie as removal is non-fallible, but
+/// may want to validate for future proofing.
 #[proof_route("POST /logout")]
 async fn logout_route(auth: OptionalAuth) -> Result<HttpResponse, AuthenticationRequestError> {
     auth.token()
