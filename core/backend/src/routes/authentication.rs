@@ -5,9 +5,11 @@ use actix_web::{HttpResponse, Scope};
 use actix_web::web::scope;
 use thiserror::Error;
 
+use crate::utils::errors::formatters::json_formatter;
 use crate::utils::extractors::authentication::{OptionalAuth, COOKIE_KEY};
 
 #[derive(ErrorResponse, Error, Debug)]
+#[transform_response(json_formatter)]
 enum AuthenticationRequestError {
     #[error("Invalid or not provided credentials.")]
     #[status_code(401)]
