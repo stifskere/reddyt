@@ -1,9 +1,19 @@
 FROM nim65s/cargo-binstall AS installer
 
-RUN cargo binstall -y --locked \
-	trunk \
-	cargo-watch \
-	just
+ARG NO_BINSTALL="0"
+
+RUN \
+	if [ "${NO_BINSTALL}" = "0" ]; then \
+		cargo binstall -y --locked \
+			trunk \
+			cargo-watch \
+			just; \
+	elif [ "${NO_BINSTALL}" = "1" ]; then \
+		cargo install -q --locked \
+			trunk \
+			cargo-watch \
+			just; \
+	fi
 
 FROM rust:1.89-bookworm
 
