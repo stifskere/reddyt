@@ -10,6 +10,9 @@ use crate::utils::application::context::{AppContext, AppContextError};
 mod routes;
 mod utils;
 
+/// An application initialization error.
+///
+/// WARNING: This may come displayed as DEBUG.
 #[derive(Error, Debug)]
 enum AppError {
     #[error("Error while starting HTTP server, {0:#}")]

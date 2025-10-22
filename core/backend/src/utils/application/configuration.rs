@@ -29,6 +29,9 @@ impl ReddytConfig {
     /// This function loads the environment with
     /// a layer of validation, this is required for
     /// self-hosters to debug any missconfiguration.
+    ///
+    /// The validation errors should be explicitly logged
+    /// with `log::error`.
     pub fn load_validated() -> Result<Self, ReddytConfigError> {
         let initialized = Self::init_from_env()?;
 
@@ -37,6 +40,11 @@ impl ReddytConfig {
         // the email can be validated as-is, this way alerts
         // can be sent if needed.
         if !EmailAddress::is_valid(initialized.admin_email()) {
+            log::error!(concat!(
+                "The configured email is invalid, ",
+                "please re-check the environment variables."
+            ));
+
             return Err(ReddytConfigError::InvalidEmail);
         }
 
