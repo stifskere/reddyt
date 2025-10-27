@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use thiserror::Error;
 
-use crate::utils::application::configuration::{ReddytConfig, ReddytConfigError};
+use crate::utils::application::environment::{ReddytConfig, ReddytConfigError};
 
 /// Holds any errors related to the application context
 /// i.e database connections, environment...
