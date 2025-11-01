@@ -58,7 +58,7 @@ impl AppContext {
     
     #[inline]
     /// the application connection pool
-    pub async fn get_db_connection(&self) -> &Pool<Postgres> {
-    self.connection_pool.get().expect("Connection Pool must be initialized first!")
+    pub async fn get_db_connection(&self) -> Option<&Pool<Postgres>> {
+        self.connection_pool.get()
     }
 }
