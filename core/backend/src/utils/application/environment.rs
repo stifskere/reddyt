@@ -21,8 +21,15 @@ pub enum ReddytConfigError {
 pub struct ReddytConfig {
     #[envconfig(from = "RYT_ADMIN_EMAIL")]
     admin_email: String,
+    
     #[envconfig(from = "RYT_ADMIN_PASSWORD")]
-    admin_password: String
+    admin_password: String,
+    
+    #[envconfig(from = "DATABASE_URL")]
+    database_url: String,
+    
+    #[envconfig(from = "DATABASE_MIGRATIONS", default = "./migrations")]
+    migrations_path: String,
 }
 
 impl ReddytConfig {
@@ -63,5 +70,17 @@ impl ReddytConfig {
     #[inline]
     pub fn admin_password(&self) -> &str {
         &self.admin_password
+    }
+    
+    /// The application configured
+    /// database url 
+    #[inline]
+    pub fn database_url(&self) -> &str {
+        &self.database_url
+    }
+    /// The path to db migration files
+    #[inline]
+    pub fn migrations_path(&self) -> &str {
+        &self.migrations_path
     }
 }
