@@ -4,15 +4,6 @@ use sqlx::{Error as SqlxError, Pool, Postgres};
 use std::{path::Path, sync::OnceLock};
 use thiserror::Error;
 
-#[macro_export]
-macro_rules! db {
-    () => {
-        $crate::helpers::database::connection::get_db_connection().await?
-    };
-}
-
-static CONNECTION: OnceLock<Pool<Postgres>> = OnceLock::new();
-
 #[derive(Error, Debug)]
 pub enum DbConnectionError {
     #[error("{0:#}")]
@@ -22,20 +13,18 @@ pub enum DbConnectionError {
     MigrateError(#[from] MigrateError),
 }
 
-pub async fn get_db_connection<'r>() -> Result<&'r Pool<Postgres>, DbConnectionError> {
-    if let Some(connection) = CONNECTION.get() {
-        return Ok(connection);
-    }
-
+pub async fn init_db_connection(db_url: &str, migrations_path: &str) -> Result<OnceLock<Pool<Postgres>>, DbConnectionError> {
+    let connection = OnceLock::new();
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(env!("DATABASE_URL"))
+        .connect(db_url)
         .await?;
 
-    Migrator::new(Path::new(&option_env!("DATABASE_MIGRATIONS").unwrap_or("./migrations")))
+    Migrator::new(Path::new(migrations_path))
         .await?
         .run(&pool)
         .await?;
 
-    Ok(CONNECTION.get_or_init(|| pool))
+    connection.set(pool);
+    Ok(connection)
 }
