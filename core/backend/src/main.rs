@@ -24,7 +24,7 @@ enum AppError {
 
 #[main]
 async fn main() -> Result<(), AppError> {
-    let context = AppContext::new()?;
+    let context = AppContext::new().await?;
 
     HttpServer::new(move || {
         let context = context.clone();
