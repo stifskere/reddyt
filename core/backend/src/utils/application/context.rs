@@ -1,6 +1,6 @@
-use std::sync::{
-    Arc,
-    OnceLock
+use std::{
+    borrow::Borrow,
+    sync::Arc,
 };
 
 use sqlx::{
@@ -35,7 +35,7 @@ pub enum AppContextError {
 #[derive(Clone, Debug)]
 pub struct AppContext {
     config: Arc<ReddytConfig>,
-    connection_pool: OnceLock<Pool<Postgres>>
+    connection_pool: Arc<Pool<Postgres>>
 }
 
 impl AppContext {
@@ -58,7 +58,7 @@ impl AppContext {
     
     #[inline]
     /// the application connection pool
-    pub async fn get_db_connection(&self) -> Option<&Pool<Postgres>> {
-        self.connection_pool.get()
+    pub fn get_db_connection(&self) -> Arc<Pool<Postgres>> {
+        self.connection_pool.clone()
     }
 }

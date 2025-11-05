@@ -1,6 +1,9 @@
+use std::str::FromStr;
+
 use email_address::EmailAddress;
 use envconfig::{Envconfig, Error as EnvconfigError};
 use thiserror::Error;
+use sqlx::postgres::PgConnectOptions;
 
 /// Holds any errors related to the configuration
 /// and application environment.
@@ -10,7 +13,10 @@ pub enum ReddytConfigError {
     Envconfig(#[from] EnvconfigError),
 
     #[error("The admin email at RYT_ADMIN_EMAIL is not valid.")]
-    InvalidEmail
+    InvalidEmail,
+    
+    #[error("DATABASE_URL doesn't contain a valid postgresql database url.")]
+    InvalidPostgresUrl
 }
 
 /// The application relevant environment variables.
@@ -53,6 +59,13 @@ impl ReddytConfig {
             ));
 
             return Err(ReddytConfigError::InvalidEmail);
+        }
+        
+        if PgConnectOptions::from_str(initialized.database_url()).is_err() {
+            log::error!(
+                "The DATABASE_URL doesn't contain a valid postgresql connection url."
+            );
+            return Err(ReddytConfigError::InvalidPostgresUrl);
         }
 
         Ok(initialized)

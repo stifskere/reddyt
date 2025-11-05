@@ -1,7 +1,7 @@
 use sqlx::migrate::{MigrateError, Migrator};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Error as SqlxError, Pool, Postgres};
-use std::{path::Path, sync::OnceLock};
+use std::{path::Path, sync::Arc};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -13,8 +13,7 @@ pub enum DbConnectionError {
     MigrateError(#[from] MigrateError),
 }
 
-pub async fn init_db_connection(db_url: &str, migrations_path: &str) -> Result<OnceLock<Pool<Postgres>>, DbConnectionError> {
-    let connection = OnceLock::new();
+pub async fn init_db_connection(db_url: &str, migrations_path: &str) -> Result<Arc<Pool<Postgres>>, DbConnectionError> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(db_url)
@@ -25,6 +24,5 @@ pub async fn init_db_connection(db_url: &str, migrations_path: &str) -> Result<O
         .run(&pool)
         .await?;
 
-    connection.set(pool);
-    Ok(connection)
+    Ok(Arc::new(pool))
 }
