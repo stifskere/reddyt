@@ -52,8 +52,8 @@ impl AppContext {
         &self.config
     }
 
-    #[inline]
     /// the application connection pool
+    #[inline]
     pub fn get_db_connection(&self) -> Arc<Pool<Postgres>> {
         self.connection_pool.clone()
     }
