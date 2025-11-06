@@ -1,7 +1,7 @@
 use sqlx::migrate::{MigrateError, Migrator};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Error as SqlxError, Pool, Postgres};
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

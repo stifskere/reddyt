@@ -14,7 +14,7 @@ pub enum ReddytConfigError {
 
     #[error("The admin email at RYT_ADMIN_EMAIL is not valid.")]
     InvalidEmail,
-    
+
     #[error("DATABASE_URL doesn't contain a valid postgresql database url.")]
     InvalidPostgresUrl
 }
@@ -27,13 +27,13 @@ pub enum ReddytConfigError {
 pub struct ReddytConfig {
     #[envconfig(from = "RYT_ADMIN_EMAIL")]
     admin_email: String,
-    
+
     #[envconfig(from = "RYT_ADMIN_PASSWORD")]
     admin_password: String,
-    
+
     #[envconfig(from = "DATABASE_URL")]
     database_url: String,
-    
+
     #[envconfig(from = "DATABASE_MIGRATIONS", default = "./migrations")]
     migrations_path: String,
 }
@@ -60,7 +60,7 @@ impl ReddytConfig {
 
             return Err(ReddytConfigError::InvalidEmail);
         }
-        
+
         if PgConnectOptions::from_str(initialized.database_url()).is_err() {
             log::error!(
                 "The DATABASE_URL doesn't contain a valid postgresql connection url."
@@ -84,13 +84,14 @@ impl ReddytConfig {
     pub fn admin_password(&self) -> &str {
         &self.admin_password
     }
-    
+
     /// The application configured
     /// database url 
     #[inline]
     pub fn database_url(&self) -> &str {
         &self.database_url
     }
+
     /// The path to db migration files
     #[inline]
     pub fn migrations_path(&self) -> &str {
