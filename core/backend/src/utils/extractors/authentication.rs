@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::utils::application::context::AppContext;
-use crate::utils::errors::formatters::json_formatter;
+use crate::utils::application::errors::json_formatter;
 
 /// The authentication cookie key
 pub const COOKIE_KEY: &str = "authentication";

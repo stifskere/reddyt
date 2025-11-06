@@ -5,7 +5,7 @@ use actix_web::{HttpResponse, Scope};
 use actix_web::web::scope;
 use thiserror::Error;
 
-use crate::utils::errors::formatters::json_formatter;
+use crate::utils::application::errors::json_formatter;
 use crate::utils::extractors::authentication::{OptionalAuth, COOKIE_KEY};
 
 /// Holds errors related to authentication trough HTTP.
