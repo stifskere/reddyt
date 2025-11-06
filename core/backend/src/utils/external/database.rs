@@ -13,7 +13,7 @@ pub enum DbConnectionError {
     MigrateError(#[from] MigrateError),
 }
 
-pub async fn init_db_connection(db_url: &str, migrations_path: &str) -> Result<Arc<Pool<Postgres>>, DbConnectionError> {
+pub async fn init_db_connection(db_url: &str, migrations_path: &str) -> Result<Pool<Postgres>, DbConnectionError> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(db_url)
@@ -24,5 +24,5 @@ pub async fn init_db_connection(db_url: &str, migrations_path: &str) -> Result<A
         .run(&pool)
         .await?;
 
-    Ok(Arc::new(pool))
+    Ok(pool)
 }

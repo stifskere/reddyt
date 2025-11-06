@@ -1,4 +1,5 @@
-use std::{backtrace::Backtrace, collections::HashMap};
+use std::collections::HashMap;
+use std::backtrace::Backtrace;
 
 use actix_web::{HttpResponse, HttpResponseBuilder};
 

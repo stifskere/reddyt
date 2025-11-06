@@ -1,19 +1,10 @@
-use std::{
-    borrow::Borrow,
-    sync::Arc,
-};
+use std::sync::Arc;
 
-use sqlx::{
-    Pool,
-    Postgres,
-};
+use sqlx::{Pool, Postgres};
 use thiserror::Error;
 
 use crate::utils::application::environment::{ReddytConfig, ReddytConfigError};
-use crate::utils::db::{
-    init_db_connection,
-    DbConnectionError,
-};
+use crate::utils::external::database::{init_db_connection, DbConnectionError};
 
 /// Holds any errors related to the application context
 /// i.e database connections, environment...
@@ -21,7 +12,7 @@ use crate::utils::db::{
 pub enum AppContextError {
     #[error("Error while loading coniguration, {0:#}")]
     Config(#[from] ReddytConfigError),
-    
+
     #[error("Error while connecting to the Database, {0:#}")]
     DataBase(#[from] DbConnectionError),
 }
@@ -43,10 +34,15 @@ impl AppContext {
     /// defaults.
     pub async fn new() -> Result<Self, AppContextError> {
         let config = ReddytConfig::load_validated()?;
-        let connection_pool = init_db_connection(config.database_url(), config.migrations_path()).await?;
+        let connection_pool = init_db_connection(
+            config.database_url(),
+            config.migrations_path()
+        )
+            .await?;
+
         Ok(Self {
             config: Arc::new(config),
-            connection_pool
+            connection_pool: Arc::new(connection_pool)
         })
     }
 
@@ -55,7 +51,7 @@ impl AppContext {
     pub fn config(&self) -> &ReddytConfig {
         &self.config
     }
-    
+
     #[inline]
     /// the application connection pool
     pub fn get_db_connection(&self) -> Arc<Pool<Postgres>> {
