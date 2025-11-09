@@ -1,2 +1,2 @@
 
-DROP TABLE profile_overrides IF EXISTS;
+DROP TABLE IF EXISTS profile_overrides;
