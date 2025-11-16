@@ -1,5 +1,10 @@
 set dotenv-load
 
+# Set to reference the just executable
+# in further recipes.
+just := `command -v just`
+
+
 @dev *flags:
 	#!/bin/bash
 	set -e;
@@ -35,7 +40,7 @@ set dotenv-load
 		# of ./.dockerenv or a group called either docker, containerd
 		# or kubepods.
 
-		cargo watch -x 'run -p backend' 2>&1 & :;
+		cargo watch -s "{{just}} migrate && cargo run -p backend" 2>&1 & :;
 		trunk serve --config Trunk.toml 2>&1 & :;
 		wait;
 	else
@@ -56,3 +61,13 @@ set dotenv-load
 			-f ./docker/dev.docker-compose.yml up \
 			--no-deps;
 	fi
+
+
+@migrate:
+	#!/bin/bash
+	set -e
+
+	atlas schema apply \
+		--to "file://migrations" \
+		-u "$DATABASE_URL?sslmode=disable" \
+		--auto-approve

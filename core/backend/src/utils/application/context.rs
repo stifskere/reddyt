@@ -34,10 +34,7 @@ impl AppContext {
     /// defaults.
     pub async fn new() -> Result<Self, AppContextError> {
         let config = ReddytConfig::load_validated()?;
-        let connection_pool = init_db_connection(
-            config.database_url(),
-            config.migrations_path()
-        )
+        let connection_pool = init_db_connection(config.database_url())
             .await?;
 
         Ok(Self {
