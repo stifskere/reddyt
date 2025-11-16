@@ -1,7 +1,6 @@
 CREATE TABLE IF NOT EXISTS profiles (
 	id SERIAL PRIMARY KEY,
 	name VARCHAR(35) NOT NULL UNIQUE, -- a simple name identifier, no effect.
-	youtube_oauth VARCHAR(255), -- the youtube oauth token.
 	upload_schedule VARCHAR(30) NOT NULL DEFAULT '0 12 * * *', -- used to set the next_run filed.
 	question_prompt VARCHAR(4099) NOT NULL DEFAULT '', -- a prompt to generate a reddyt style question.
 	answer_prompt VARCHAR(4099) NOT NULL DEFAULT '', -- a prompt to generate a reddyt style answer.
