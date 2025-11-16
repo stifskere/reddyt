@@ -33,9 +33,6 @@ pub struct ReddytConfig {
 
     #[envconfig(from = "DATABASE_URL")]
     database_url: String,
-
-    #[envconfig(from = "DATABASE_MIGRATIONS", default = "./migrations")]
-    migrations_path: String,
 }
 
 impl ReddytConfig {
@@ -90,11 +87,5 @@ impl ReddytConfig {
     #[inline]
     pub fn database_url(&self) -> &str {
         &self.database_url
-    }
-
-    /// The path to db migration files
-    #[inline]
-    pub fn migrations_path(&self) -> &str {
-        &self.migrations_path
     }
 }
