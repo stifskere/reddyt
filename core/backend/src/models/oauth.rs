@@ -7,50 +7,74 @@ use sqlx::{query, query_as, Error as SqlxError, PgPool, Type as SqlxType};
 use sqlx::prelude::FromRow;
 
 
-/// Enum declaration for errors happening within
-/// the profile oauth database transactions.
+/// Represents all possible errors when interacting with the `profile_oauth` table.
 #[derive(Error, Debug)]
-pub enum ProfileOAuthModelError {
+pub enum ProfileOAuthError {
+    /// Error that occurs when a database query fails.
+    ///
+    /// Wraps any `sqlx::Error` returned by SQLx operations.
     #[error("Error querying the database, {0:#}")]
     QueryError(#[from] SqlxError),
 }
 
-/// Shorter error type definition for errors returning [`ProfileOAuthModelError`]
-/// as error variant.
-#[allow(unused)]
-type ProfileOAuthResult<T> = Result<T, ProfileOAuthModelError>;
 
-/// Enum declaration identifying all possible types of
-/// OAuth connections for a profile.
+/// Convenience result type used throughout the `ProfileOAuth` module.
+///
+/// Returns either a successful value `T` or a `ProfileOAuthError`.
+#[allow(unused)]
+type ProfileOAuthResult<T> = Result<T, ProfileOAuthError>;
+
+
+/// Supported OAuth providers for a profile.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 #[cfg_attr(target_arch = "x86_64", derive(SqlxType))]
 #[cfg_attr(target_arch = "x86_64", sqlx(type_name = "oauth_type", rename_all = "SCREAMING_SNAKE_CASE"))]
 pub enum OAuthType {
+    /// OAuth provider for Youtube.
     Youtube
 }
 
-/// `profile_oauth` database relation struct.
+
+/// Represents a single OAuth token set for a profile.
 ///
-/// This is a token set for OAuth connections within profiles.
+/// Maps directly to the `profile_oauth` database table.
 #[derive(Clone, Debug, PartialEq, PartialOrd, Deserialize, Serialize)]
 #[cfg_attr(target_arch = "x86_64", derive(FromRow))]
 #[cfg_attr(target_arch = "x86_64", sqlx(rename_all = "snake_case"))]
 pub struct ProfileOAuth {
+    /// Primary key of the token set.
     id: i32,
+
+    /// ID of the profile that owns this token set.
     profile_id: i32,
+
+    /// OAuth provider type (e.g., Youtube).
     oauth_type: OAuthType,
+
+    /// Optional refresh token issued by the provider.
+    /// Can be `None` if not provided or expired.
     refresh_token: Option<String>,
+
+    /// Optional authentication token issued by the provider.
+    /// Can be `None` if not provided or expired.
     auth_token: Option<String>
 }
 
+
 #[cfg(target_arch = "x86_64")]
 impl ProfileOAuth {
-    /// `profile_oauth` relation creation for `profile`, this is encapsualted at
-    /// module level and should be only exposed within a wrapper function
-    /// in the profile relation itself.
+    /// Creates a new `ProfileOAuth` token set for the specified profile.
     ///
-    /// Returns Ok(Self) if the relation could be created
-    /// or Err(..) if there was a query error.
+    /// # Parameters
+    /// - `connection`: Reference to the database pool.
+    /// - `profile_id`: ID of the profile to attach the OAuth token to.
+    /// - `oauth_type`: The OAuth provider type.
+    /// - `refresh_token`: Optional refresh token.
+    /// - `auth_token`: Optional authentication token.
+    ///
+    /// # Returns
+    /// - `Ok(ProfileOAuth)` if the row is successfully inserted.
+    /// - `Err(ProfileOAuthError)` if the query fails.
     #[must_use]
     pub(super) async fn create(
         connection: &PgPool,
@@ -85,17 +109,21 @@ impl ProfileOAuth {
         Ok(result)
     }
 
-    /// Fetch a `profile_oauth` relation from the
-    /// database, this is encapsulated at module
-    /// for lazy level for loading within a
-    /// `profile` relation.
+
+    /// Fetches a `ProfileOAuth` token set by `profile_id` and `oauth_type`.
     ///
-    /// Returns Ok(Self) if success,
-    /// Ok(None) if no matching model exists,
-    /// and Err(..) if there was a query error.
+    /// # Parameters
+    /// - `connection`: Reference to the database pool.
+    /// - `profile_id`: ID of the profile the token set is from.
+    /// - `oauth_type`: The OAuth provider type.
+    ///
+    /// # Returns
+    /// - `Ok(Some(ProfileOAuth))` if a matching row exists.
+    /// - `Ok(None)` if no matching row is found.
+    /// - `Err(ProfileOAuthError)` if the query fails.
     #[must_use]
     #[allow(unused)]
-    pub(crate) async fn get(
+    pub(super) async fn get(
         connection: &PgPool,
         profile_id: i32,
         oauth_type: OAuthType
@@ -117,13 +145,18 @@ impl ProfileOAuth {
         Ok(result)
     }
 
-    /// Obtain all the `profile_oauth` relations
-    /// matching a `profile_id`.
+
+    /// Fetches all `ProfileOAuth` token sets for a given `profile_id`.
     ///
-    /// Returns Ok(Vec<Self>) if success
-    /// or Err(..) if a query error occurred.
+    /// # Parameters
+    /// - `connection`: Reference to the database pool.
+    /// - `profile_id`: ID of the token sets owner..
+    ///
+    /// # Returns
+    /// - `Ok(Vec<ProfileOAuth>)` if successful.
+    /// - `Err(ProfileOAuthError)` if the query fails.
     #[must_use]
-    pub(crate) async fn get_all(connection: &PgPool, profile_id: i32) -> ProfileOAuthResult<Vec<Self>> {
+    pub(super) async fn get_all(connection: &PgPool, profile_id: i32) -> ProfileOAuthResult<Vec<Self>> {
         let result = query_as(
             r"
                 SELECT * FROM profile_oauth
@@ -138,22 +171,17 @@ impl ProfileOAuth {
         Ok(result)
     }
 
-    /// Deletes a `profile_oauth` relation from the
-    /// database and consumes the instance.
+
+    /// Deletes this `ProfileOAuth` token set from the database.
     ///
-    /// To ensure the model actually exists before deleting
-    /// it, it's deleted from an already selected model.
+    /// # Parameters
+    /// - `connection`: Reference to the database pool.
     ///
-    /// This introduces overhead on selecting a model,
-    /// but since postgres and rust are fast enough
-    /// we can allow us that.
-    ///
-    /// THIS IS NOT ATOMIC.
-    ///
-    /// Returns Ok(Some(())) if deletion was successful,
-    /// Ok(None) if no rows were matching
-    /// and Err(..) if there was an error while querying.
-    pub(crate) async fn delete(self, connection: &PgPool) -> ProfileOAuthResult<Option<()>> {
+    /// # Returns
+    /// - `Ok(Some(()))` if deletion succeeded.
+    /// - `Ok(None)` if no rows matched.
+    /// - `Err(ProfileOAuthError)` if the query fails.
+    pub async fn delete(self, connection: &PgPool) -> ProfileOAuthResult<Option<()>> {
         let result = query(
             r"
                 DELETE FROM profile_oauth
@@ -172,14 +200,15 @@ impl ProfileOAuth {
         Ok(Some(()))
     }
 
-    /// Update the `refresh_token` column from the
-    /// database, as well as this instance field.
+
+    /// Updates the `refresh_token` field in the database and this instance.
     ///
-    /// There is no remove method, this will
-    /// be set to null if `None` is passed.
+    /// # Parameters
+    /// - `new_token`: New refresh token value or `None` to clear.
     ///
-    /// Returns Ok(&mut Self) if success
-    /// otherwise Err(..)
+    /// # Returns
+    /// - `Ok(&mut Self)` if successful.
+    /// - `Err(ProfileOAuthError)` if the query fails.
     pub async fn update_refresh_token(
         &mut self,
         connection: &PgPool,
@@ -204,14 +233,15 @@ impl ProfileOAuth {
         Ok(self)
     }
 
-    /// Update the `auth_token` column from the
-    /// database, as well as this instance field.
+
+    /// Updates the `auth_token` field in the database and this instance.
     ///
-    /// There is no remove method, this will
-    /// be set to null if `None` is passed.
+    /// # Parameters
+    /// - `new_token`: New authentication token or `None` to clear.
     ///
-    /// Returns Ok(&mut Self) if success
-    /// otherwise Err(..)
+    /// # Returns
+    /// - `Ok(&mut Self)` if successful.
+    /// - `Err(ProfileOAuthError)` if the query fails.
     pub async fn update_auth_token(
         &mut self,
         connection: &PgPool,
@@ -239,39 +269,39 @@ impl ProfileOAuth {
 }
 
 impl ProfileOAuth {
-    /// The profile OAuth token set relation id.
+    /// Returns the token set's ID.
     #[must_use]
     #[inline]
     pub fn id(&self) -> i32 {
         self.id
     }
 
-    /// The owner profile relation id.
+
+    /// Returns the profile ID owning this token set.
     #[must_use]
     #[inline]
     pub fn profile_id(&self) -> i32 {
-        self.profile_id
+    self.profile_id
     }
 
-    /// The OAuth platform for this token set.
+
+    /// Returns the OAuth provider type.
     #[must_use]
     #[inline]
     pub fn oauth_type(&self) -> OAuthType {
         self.oauth_type
     }
 
-    /// The token set refresh token.
-    ///
-    /// This is optional depending on the platform.
+
+    /// Returns the refresh token, if any.
     #[must_use]
     #[inline]
     pub fn refresh_token(&self) -> &Option<String> {
         &self.refresh_token
     }
 
-    /// The token set auth token.
-    ///
-    /// This is optional depending on the platform.
+
+    /// Returns the authentication token, if any.
     #[must_use]
     #[inline]
     pub fn auth_token(&self) -> &Option<String> {
