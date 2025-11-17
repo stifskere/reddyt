@@ -156,7 +156,10 @@ impl ProfileOAuth {
     /// - `Ok(Vec<ProfileOAuth>)` if successful.
     /// - `Err(ProfileOAuthError)` if the query fails.
     #[must_use]
-    pub(super) async fn get_all(connection: &PgPool, profile_id: i32) -> ProfileOAuthResult<Vec<Self>> {
+    pub(super) async fn get_all_for_profile(
+        connection: &PgPool,
+        profile_id: i32
+    ) -> ProfileOAuthResult<Vec<Self>> {
         let result = query_as(
             r"
                 SELECT * FROM profile_oauth

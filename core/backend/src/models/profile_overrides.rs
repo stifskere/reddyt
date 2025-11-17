@@ -32,7 +32,7 @@ type ProfileOverridesResult<T> = Result<T, ProfileOverridesError>;
 #[derive(Clone, Debug, PartialEq, PartialOrd, Deserialize, Serialize)]
 #[cfg_attr(target_arch = "x86_64", derive(FromRow))]
 #[cfg_attr(target_arch = "x86_64", sqlx(rename_all = "snake_case"))]
-pub struct ProfileOverrides {
+pub struct ProfileOverride {
     /// Primary key of the override entry.
     id: i32,
 
@@ -47,7 +47,7 @@ pub struct ProfileOverrides {
 }
 
 #[cfg(target_arch = "x86_64")]
-impl ProfileOverrides {
+impl ProfileOverride {
     /// Creates a new `ProfileOverrides` entry in the database.
     ///
     /// # Parameters
@@ -127,7 +127,7 @@ impl ProfileOverrides {
     /// - `Ok(Vec<ProfileOverrides>)` if successful.
     /// - `Err(ProfileOverridesError)` if the query fails.
     #[must_use]
-    pub(super) async fn get_all(
+    pub(super) async fn get_all_for_profile(
         connection: &PgPool,
         profile_id: i32
     ) -> ProfileOverridesResult<Vec<Self>> {
@@ -253,7 +253,7 @@ impl ProfileOverrides {
     }
 }
 
-impl ProfileOverrides {
+impl ProfileOverride {
     /// Returns the ID of the override entry.
     pub fn id(&self) -> i32 {
         self.id
