@@ -214,6 +214,10 @@ impl ProfileOAuth {
         connection: &PgPool,
         new_token: Option<String>
     ) -> ProfileOAuthResult<&mut Self> {
+        if self.refresh_token == new_token {
+            return Ok(self);
+        }
+
         query(
             r"
                 UPDATE profile_oauth
@@ -247,6 +251,10 @@ impl ProfileOAuth {
         connection: &PgPool,
         new_token: Option<String>
     ) -> ProfileOAuthResult<&mut Self> {
+        if self.auth_token == new_token {
+            return Ok(self);
+        }
+
         query(
             r"
                 UPDATE profile_oauth
