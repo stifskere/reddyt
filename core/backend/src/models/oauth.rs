@@ -29,6 +29,7 @@ type ProfileOAuthResult<T> = Result<T, ProfileOAuthError>;
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 #[cfg_attr(target_arch = "x86_64", derive(SqlxType))]
 #[cfg_attr(target_arch = "x86_64", sqlx(type_name = "oauth_type", rename_all = "SCREAMING_SNAKE_CASE"))]
+#[non_exhaustive]
 pub enum OAuthType {
     /// OAuth provider for Youtube.
     Youtube

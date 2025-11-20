@@ -30,6 +30,7 @@ type UploadResult<T> = Result<T, UploadError>;
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 #[cfg_attr(target_arch = "x86_64", derive(SqlxType))]
 #[cfg_attr(target_arch = "x86_64", sqlx(type_name = "upload_platform", rename_all = "SCREAMING_SNAKE_CASE"))]
+#[non_exhaustive]
 pub enum UploadPlatform {
     /// Video uploaded via the configured local provider.
     LocalProvider,
@@ -80,7 +81,7 @@ impl Upload {
     /// - `Ok(Upload)` if the row was successfully inserted.
     /// - `Err(UploadError)` if the query fails.
     #[must_use]
-    pub async fn create(
+    pub(super) async fn create(
         connection: &PgPool,
         run_id: i32,
         platform: UploadPlatform,
@@ -103,35 +104,6 @@ impl Upload {
     }
 
 
-    /// Fetches an upload by its ID.
-    ///
-    /// # Parameters
-    /// - `connection`: Reference to the database pool.
-    /// - `id`: ID of the upload.
-    ///
-    /// # Returns
-    /// - `Ok(Some(Upload))` if a matching row exists.
-    /// - `Ok(None)` if no matching row is found.
-    /// - `Err(UploadError)` if the query fails.
-    #[must_use]
-    pub async fn get(
-        connection: &PgPool,
-        id: i32
-    ) -> UploadResult<Option<Self>> {
-        let result = query_as(
-            r"
-                SELECT * FROM uploads
-                WHERE id = $1
-            "
-        )
-        .bind(id)
-        .fetch_optional(connection)
-        .await?;
-
-        Ok(result)
-    }
-
-
     /// Fetches all uploads for a given run.
     ///
     /// # Parameters
@@ -142,7 +114,7 @@ impl Upload {
     /// - `Ok(Vec<Upload>)` if successful.
     /// - `Err(UploadError)` if the query fails.
     #[must_use]
-    pub async fn get_all_for_run(
+    pub(crate) async fn get_all_for_run(
         connection: &PgPool,
         run_id: i32
     ) -> UploadResult<Vec<Self>> {
