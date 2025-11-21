@@ -10,6 +10,7 @@ use sqlx::prelude::FromRow;
 
 /// Represents all possible errors when interacting with the `profile_overrides` table.
 #[derive(Error, Debug)]
+#[cfg(target_arch = "x86_64")]
 pub enum ProfileOverridesError {
     /// Error that occurs when a database query fails.
     ///
@@ -22,7 +23,7 @@ pub enum ProfileOverridesError {
 /// Convenience result type used throughout the `ProfileOverrides` module.
 ///
 /// Returns either a successful value `T` or a `ProfileOverridesError`.
-#[allow(unused)]
+#[cfg(target_arch = "x86_64")]
 type ProfileOverridesResult<T> = Result<T, ProfileOverridesError>;
 
 
@@ -45,6 +46,7 @@ pub struct ProfileOverride {
     /// Whether the override has been claimed.
     claimed: bool
 }
+
 
 #[cfg(target_arch = "x86_64")]
 impl ProfileOverride {
@@ -253,26 +255,35 @@ impl ProfileOverride {
     }
 }
 
+
 impl ProfileOverride {
     /// Returns the ID of the override entry.
+    #[must_use]
+    #[inline]
     pub fn id(&self) -> i32 {
         self.id
     }
 
 
     /// Returns the profile ID associated with this override.
+    #[must_use]
+    #[inline]
     pub fn profile_id(&self) -> i32 {
         self.profile_id
     }
 
 
     /// Returns the scheduled timestamp for this override.
+    #[must_use]
+    #[inline]
     pub fn runs_at(&self) -> DateTime<Utc> {
         self.runs_at
     }
 
 
     /// Returns whether this override has been claimed or already ran.
+    #[must_use]
+    #[inline]
     pub fn claimed(&self) -> bool {
         self.claimed
     }

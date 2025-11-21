@@ -8,11 +8,12 @@ use sqlx::{query, query_as, Error as SqlxError, PgPool, Type as SqlxType};
 use sqlx::prelude::FromRow;
 
 #[cfg(target_arch = "x86_64")]
-use crate::models::uploads::UploadPlatform;
-use crate::models::uploads::{Upload, UploadError};
+use crate::models::uploads::{UploadPlatform, UploadError};
+use crate::models::uploads::Upload;
 
 /// Represents errors when interacting with the `runs` table.
 #[derive(Error, Debug)]
+#[cfg(target_arch = "x86_64")]
 pub enum RunError {
     /// Error occurring during a database query.
     #[error("Error querying the database, {0:#}")]
@@ -32,6 +33,7 @@ pub enum RunError {
 
 
 /// Convenience result type for `Run` operations.
+#[cfg(target_arch = "x86_64")]
 type RunResult<T> = Result<T, RunError>;
 
 
@@ -76,7 +78,7 @@ pub enum RunState {
 #[derive(Clone, Debug, PartialEq, PartialOrd, Deserialize, Serialize)]
 #[cfg_attr(target_arch = "x86_64", derive(FromRow))]
 #[cfg_attr(target_arch = "x86_64", sqlx(rename_all = "snake_case"))]
-struct Run {
+pub struct Run {
     /// Primary key of the run.
     id: i32,
 
@@ -166,7 +168,7 @@ impl Run {
     /// - `Ok(Run)` if successfully inserted.
     /// - `Err(RunError)` if the query fails.
     #[must_use]
-    pub async fn create(connection: &PgPool, profile_id: i32) -> RunResult<Self> {
+    pub(super) async fn create(connection: &PgPool, profile_id: i32) -> RunResult<Self> {
         let result = query_as(
             r"
                 INSERT INTO runs (profile_id)
@@ -361,6 +363,7 @@ impl Run {
 impl Run {
     /// Returns the run ID.
     #[must_use]
+    #[inline]
     pub fn id(&self) -> i32 {
         self.id
     }
@@ -368,6 +371,7 @@ impl Run {
 
     /// Returns the profile ID this run belongs to.
     #[must_use]
+    #[inline]
     pub fn profile_id(&self) -> i32 {
         self.profile_id
     }
@@ -375,6 +379,7 @@ impl Run {
 
     /// Returns the timestamp when the run started.
     #[must_use]
+    #[inline]
     pub fn run_date(&self) -> DateTime<Utc> {
         self.run_date
     }
@@ -382,6 +387,7 @@ impl Run {
 
     /// Returns the current processing state of the run.
     #[must_use]
+    #[inline]
     pub fn current_state(&self) -> RunState {
         self.current_state
     }
@@ -389,6 +395,7 @@ impl Run {
 
     /// Returns the error message if the run failed.
     #[must_use]
+    #[inline]
     pub fn error(&self) -> &Option<String> {
         &self.error
     }

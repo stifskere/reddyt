@@ -10,6 +10,7 @@ use sqlx::prelude::FromRow;
 
 /// Represents all possible errors when interacting with the `uploads` table.
 #[derive(Error, Debug)]
+#[cfg(target_arch = "x86_64")]
 pub enum UploadError {
     /// Error that occurs when a database query fails.
     ///
@@ -20,6 +21,7 @@ pub enum UploadError {
 
 
 /// Convenience result type used throughout the `Upload` module.
+#[cfg(target_arch = "x86_64")]
 type UploadResult<T> = Result<T, UploadError>;
 
 

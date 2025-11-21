@@ -9,6 +9,7 @@ use sqlx::prelude::FromRow;
 
 /// Represents all possible errors when interacting with the `profile_oauth` table.
 #[derive(Error, Debug)]
+#[cfg(target_arch = "x86_64")]
 pub enum ProfileOAuthError {
     /// Error that occurs when a database query fails.
     ///
@@ -22,6 +23,7 @@ pub enum ProfileOAuthError {
 ///
 /// Returns either a successful value `T` or a `ProfileOAuthError`.
 #[allow(unused)]
+#[cfg(target_arch = "x86_64")]
 type ProfileOAuthResult<T> = Result<T, ProfileOAuthError>;
 
 
@@ -124,7 +126,7 @@ impl ProfileOAuth {
     /// - `Err(ProfileOAuthError)` if the query fails.
     #[must_use]
     #[allow(unused)]
-    pub(super) async fn get(
+    pub async fn get(
         connection: &PgPool,
         profile_id: i32,
         oauth_type: OAuthType
@@ -277,8 +279,8 @@ impl ProfileOAuth {
 
         Ok(self)
     }
-
 }
+
 
 impl ProfileOAuth {
     /// Returns the token set's ID.
