@@ -4,6 +4,7 @@ enum "run_state" {
 
   values = [
     "ERROR",
+    "IDLING",
     "GENERATING_QUESTION",
     "GENERATING_ANSWER",
     "RENDERING_VOICE",
@@ -50,6 +51,7 @@ table "runs" {
   column "current_state" {
     type = enum.run_state
     null = false
+    default = "IDLING"
     comment = "The current state of this run."
   }
 

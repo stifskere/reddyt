@@ -7,6 +7,7 @@ use std::io::Error as IoError;
 use crate::routes::authentication::authentication_scope;
 use crate::utils::application::context::{AppContext, AppContextError};
 
+mod models;
 mod routes;
 mod utils;
 

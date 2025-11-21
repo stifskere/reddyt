@@ -21,6 +21,13 @@ table "profile_oauth" {
     on_delete = CASCADE
   }
 
+  unique "oauth_type_per_profile" {
+    columns = [
+      column.profile_id,
+      column.oauth_type
+    ]
+  }
+
   column "id" {
     type = serial
     null = false
