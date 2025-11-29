@@ -9,7 +9,7 @@ table "uploads" {
 	foreign_key "fk_uploads_platform" {
 		columns = [column.upload_platform_id]
 		ref_columns = [table.upload_platforms.column.id]
-		on_delete = CASCADE
+		on_delete = NO_ACTION
 	}
 
 	foreign_key "fk_uploads_run" {
