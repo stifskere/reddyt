@@ -6,15 +6,15 @@ table "video_stage_layers" {
 		columns = [column.id]
 	}
 
-	foreign_key "fk_stages_profile" {
-		columns = [column.profile_id]
+	foreign_key "fk_stages_layers" {
+		columns = [column.profile_stage_id]
 		ref_columns = [table.profile_stages.column.id]
 		on_delete = CASCADE
 	}
 
 	index "u_order_video_stage" {
 		unique = true
-		columns = [column.video_stage_id, column.order]
+		columns = [column.profile_stage_id, column.order]
 		comment = "Unique layer order per video stage."
 	}
 
@@ -23,7 +23,7 @@ table "video_stage_layers" {
 		null = false
 	}
 
-	column "video_stage_id" {
+	column "profile_stage_id" {
 		type = int
 		null = false
 		comment = "The video stage owning this layer."

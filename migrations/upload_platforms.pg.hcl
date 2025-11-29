@@ -4,7 +4,8 @@ enum "upload_platform_type" {
 
 	values = [
 		"LOCAL",
-		"YOUTUBE" # May be extended with other providers in the future
+		"YOUTUBE_SHORTS",
+		"YOUTUBE_VIDEO" # May be extended with other providers in the future
 	]
 }
 

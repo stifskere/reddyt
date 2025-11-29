@@ -30,7 +30,7 @@ table "runs" {
 	}
 
 	column "processing" {
-		type = array(varchar(128))
+		type = sql("VARCHAR(128)[]")
 		null = false
 		comment = "The layers currently being processed named as \"stage.layer\""
 	}
