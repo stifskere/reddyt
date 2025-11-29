@@ -8,6 +8,12 @@ table "accounts" {
 		columns = [column.id]
 	}
 
+	index "u_account_email" {
+		unique = true
+		columns = [column.email]
+		comment = "Unique account by email."
+	}
+
 	column "id" {
 		type = serial
 		null = false
@@ -15,7 +21,6 @@ table "accounts" {
 
 	column "email" {
 		type = varchar(255)
-		unique = true
 		null = false
 		comment = "The account associated email."
 	}
