@@ -1,55 +1,50 @@
-enum "upload_platform" {
-  schema = schema.reddyt
-  comment = "Upload platforms."
-
-  values = [
-    "LOCAL_PROVIDER",
-    "YOUTUBE"
-  ]
-}
-
 table "uploads" {
-  schema = schema.reddyt
-  comment = "The generated content URLs for runs."
+	schema = schema.reddyt
+	comment = "Stores what was uploaded by a specific run."
 
-  primary_key {
-    columns = [column.id]
-  }
+	primary_key {
+		columns = [column.id]
+	}
 
-  foreign_key "fk_uploads_run" {
-    columns = [column.run_id]
-    ref_columns = [table.runs.column.id]
-    on_delete = CASCADE
-    on_update = NO_ACTION
-  }
+	foreign_key "fk_uploads_platform" {
+		columns = [column.upload_platform_id]
+		ref_columns = [table.upload_platforms.column.id]
+		on_delete = CASCADE
+	}
 
-  column "id" {
-    type = serial
-    null = false
-  }
+	foreign_key "fk_uploads_run" {
+		columns = [column.run_id]
+		ref_columns = [table.runs.column.id]
+		on_delete = CASCADE
+	}
 
-  column "run_id" {
-    type = int
-    null = false
-    comment = "The run this upload belongs to."
-  }
+	column "id" {
+		type = int
+		null = false
+	}
 
-  column "platform" {
-    type = enum.upload_platform
-    null = false
-    comment = "The platform to which the video was uploaded."
-  }
+	column "upload_platform_id" {
+		type = int
+		null = false
+		comment = "Which upload platform in the profile was this uploaded to."
+	}
 
-  column "url" {
-    type = varchar(512)
-    null = false
-    comment = "URL of the uploaded video, regardless of platform."
-  }
+	column "run_id" {
+		type = int
+		null = false
+		comment = "Which run was responsible for this upload."
+	}
 
-  column "uploaded_at" {
-    type = timestamp
-    null = false
-    default = "NOW()"
-    comment = "Time when the upload occurred."
-  }
+	column "generated_url" {
+		type = varchar(1024)
+		null = false
+		comment = "The URL returned by the service."
+	}
+
+	column "uploaded_at" {
+		type = date
+		null = false
+		default = "NOW()"
+		comment = "When was this uploaded at."
+	}
 }
