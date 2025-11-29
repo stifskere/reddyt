@@ -28,3 +28,39 @@ pub struct Run {
 	/// by the UI to display the running state.
 	finished_at: DateTime<Utc>
 }
+
+impl Run {
+	/// The primary key for this model.
+    pub fn id(&self) -> i32 {
+        self.id
+    }
+
+	/// The profile this run belongs to.
+    pub fn profile_id(&self) -> i32 {
+        self.profile_id
+    }
+
+	/// If there was an error while running it's `Display`
+	/// is going to be stored here.
+    pub fn error(&self) -> Option<&String> {
+        self.error.as_ref()
+    }
+
+	/// What layer is being processed at this moment, the
+	/// format is `stage.layer`.
+    pub fn processing(&self) -> &[String] {
+        &self.processing
+    }
+
+	/// When did this start running, this is used
+	/// by the scheduler to know if it should start a new run.
+    pub fn started_at(&self) -> DateTime<Utc> {
+        self.started_at
+    }
+
+	/// When did this end running, this is used
+	/// by the UI to display the running state.
+    pub fn finished_at(&self) -> DateTime<Utc> {
+        self.finished_at
+    }
+}

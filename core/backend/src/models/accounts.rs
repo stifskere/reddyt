@@ -14,3 +14,20 @@ pub struct Account {
 	/// The account password.
 	password: Vec<u8>
 }
+
+impl Account {
+	/// The primary key for this model.
+    pub fn id(&self) -> i32 {
+        self.id
+    }
+
+	/// The account email.
+    pub fn email(&self) -> &str {
+        &self.email
+    }
+
+	/// The account password.
+    pub fn password(&self) -> &[u8] {
+        &self.password
+    }
+}

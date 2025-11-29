@@ -32,3 +32,30 @@ pub struct UploadPlatform {
 	/// The credential set OAuth secret token.
 	oauth_token: Vec<u8>
 }
+
+impl UploadPlatform {
+	/// The primary key for this model.
+    pub fn id(&self) -> i32 {
+        self.id
+    }
+
+	/// The profile this credential set belongs to.
+    pub fn profile_id(&self) -> i32 {
+        self.profile_id
+    }
+
+	//// Which platform is this credential set from.
+    pub fn platform(&self) -> UploadPlatformType {
+        self.platform
+    }
+
+	/// The credential set OAuth refresh token.
+    pub fn oauth_refresh(&self) -> &[u8] {
+        &self.oauth_refresh
+    }
+
+	/// The credential set OAuth secret token.
+    pub fn oauth_token(&self) -> &[u8] {
+        &self.oauth_token
+    }
+}
