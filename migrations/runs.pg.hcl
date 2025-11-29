@@ -1,61 +1,54 @@
-enum "run_state" {
-  schema = schema.reddyt
-  comment = "Represents the current processing state of a run."
-
-  values = [
-    "ERROR",
-    "GENERATING_QUESTION",
-    "GENERATING_ANSWER",
-    "RENDERING_VOICE",
-    "RENDERING_SUBTITLES",
-    "DOWNLOADING_BACKGROUND",
-    "COMPOSING_VIDEO",
-    "UPLOADING",
-    "DONE"
-  ]
-}
-
 table "runs" {
-  schema = schema.reddyt
-  comment = "The runs associated with profiles."
+	schema = schema.reddyt
+	comment = "A run history for scheduling, feedback and preservation."
 
-  primary_key {
-    columns = [column.id]
-  }
+	primary_key {
+		columns = [column.id]
+	}
 
-  foreign_key "fk_runs_profile" {
-    columns = [column.profile_id]
-    ref_columns = [table.profiles.column.id]
-    on_delete = CASCADE
-  }
+	foreign_key "fk_runs_profile" {
+		columns = [column.profile_id]
+		ref_columns = [table.profiles.column.id]
+		on_delete = CASCADE
+	}
 
-  column "id" {
-    type = serial
-    null = false
-  }
+	column "id" {
+		type = int
+		null = false
+	}
 
-  column "profile_id" {
-    type = int
-    null = false
-    comment = "What profile is this run processing."
-  }
+	column "profile_id" {
+		type = int
+		null = false
+		comment = "The profile this run belongs to."
+	}
 
-  column "run_date" {
-    type = timestamp
-    null = false
-    default = "NOW()"
-    comment = "At what time this run started."
-  }
+	column "error" {
+		type = varchar(1024)
+		null = true
+		comment = "Debug information in case of error, otherwise null."
+	}
 
-  column "current_state" {
-    type = enum.run_state
-    null = false
-    comment = "The current state of this run."
-  }
+	column "processing" {
+		type = array(varchar(128))
+		null = false
+		comment = "The layers currently being processed named as \"stage.layer\""
+	}
 
-  column "error" {
-    type = varchar(4096)
-    null = true
-    comment = "Contains additional information if current_state is ERROR."
-  }
+	# This is used by the scheduler to know if a profile
+	# scheduled time is already started.
+	column "started_at" {
+		type = date
+		null = false
+		default = "NOW()"
+		comment = "When did the processing for this run started."
+	}
+
+	# If this is not defined the status will be "running", otherwise
+	# error or finished depending on the error column.
+	column "finished_at" {
+		type = date
+		null = true
+		comment = "When did the processing for this run end."
+	}
 }

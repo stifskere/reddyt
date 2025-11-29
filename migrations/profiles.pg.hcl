@@ -1,66 +1,68 @@
 table "profiles" {
-  schema = schema.reddyt
-  comment = "The profile settings table."
+	schema = schema.reddyt
+	comment = "The video profiles owned by an account."
 
-  primary_key {
-    columns = [column.id]
-  }
+	primary_key {
+		columns = [column.id]
+	}
 
-  column "id" {
-    type = integer
-    null = false
-  }
+	foreign_key "fk_profiles_account" {
+		columns = [column.account_id]
+		ref_columns = [table.accounts.column.id]
+		on_delete = CASCADE
+	}
 
-  column "name" {
-    type = varchar(35)
-    null = false
-    comment = "A simple name identifier, no effect on the profile."
-  }
+	index "u_project_name_account_id" {
+		unique = true
+		columns = [column.account_id, column.name]
+		comment = "Unique index defining unique profile names for each account."
+	}
 
-  column "upload_schedule" {
-    type = varchar(30)
-    null = false
-    default = "0 12 * * *"
-    comment = "Used to populate the next_run field."
-  }
+	column "id" {
+		type = serial
+		null = false
+	}
 
-  column "paused" {
-    type = bool
-    null = false
-    default = false
-    comment = "If true no run will be triggered regardlress of the upload schedule."
-  }
+	column "account_id" {
+		type = int
+		null = false
+		comment = "The account that owns this profile."
+	}
 
-  column "question_prompt" {
-    type = varchar(4096)
-    null = false
-    default = ""
-    comment = "Will be passed to the AI provider to generate a \"reddyt style question\"."
-  }
+	column "name" {
+		type = varchar(255)
+		null = false
+		comment = "The profile human readable idenitifer."
+	}
 
-  column "answer_prompt" {
-    type = varchar(4096)
-    null = false
-    default = ""
-    comment = "Will be passed to the AI provider to ideally answer the previously generated question."
-  }
+	column "description" {
+		type = varchar(1024)
+		null = true
+		comment = "A human readable description for the profile."
+	}
 
-  column "background_glob" {
-    type = varchar(255)
-    null = false
-    default = "*"
-    comment = "A GLOB filtering the background paths in the storage provider."
-  }
+	column "schedule" {
+		type = varchar(64)
+		null = false
+		comment = "A cron schedule to define when a video should be generated and uploaded."
+	}
 
-  column "voice_name" {
-    type = varchar(255)
-    null = false
-    comment = "A voice identifier for the TTS provider to use."
-  }
+	column "paused" {
+		type = bool
+		null = false
+		default = false
+		comment = "Whether the schedule is paused and no videos should be generated."
+	}
 
-  column "font_name" {
-    type = varchar(255)
-    null = false
-    comment = "A Google Fonts identifier to display captions."
-  }
+	column "ar_height" {
+		type = int
+		null = false
+		comment = "The aspect ratio height for the video."
+	}
+
+	column "ar_width" {
+		type = int
+		null = false
+		comment = "The aspect ratio width for the video."
+	}
 }
