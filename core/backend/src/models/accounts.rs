@@ -1,5 +1,5 @@
 use scrypt::password_hash::rand_core::OsRng;
-use scrypt::password_hash::{PasswordHasher, SaltString, Error as PasswordHashError};
+use scrypt::password_hash::{Error as PasswordHashError, PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use scrypt::Scrypt;
 use serde::{Deserialize, Serialize};
 use sqlx::{query_as, PgPool, Error as SqlxError};
@@ -55,7 +55,7 @@ pub struct Account {
 	email: String,
 
 	/// The account password.
-	password: Vec<u8>,
+	password: String,
 
 	/// The account password salt to encrypt
 	/// and decrypt with scrypt.
@@ -82,7 +82,7 @@ impl Account {
 					RETURNING *
 				")
 					.bind(email)
-					.bind(password_hash.serialize().as_bytes())
+					.bind(password_hash.to_string())
 					.bind(salt.as_str())
 					.fetch_optional(connection)
 					.await?;
@@ -106,7 +106,7 @@ impl Account {
 	) -> Result<Option<Self>, AccountError> {
 		match credentials {
 			AccountCredentials::Basic { email, password } => {
-				let account = query_as(r"
+				let account: Option<Self> = query_as(r"
 					SELECT * FROM accounts
 					WHERE email = $1
 					LIMIT 1
@@ -119,7 +119,14 @@ impl Account {
 					return Ok(None);
 				};
 
-				
+				let salt = SaltString::from_b64(account.password_salt())?;
+				let password_hash = PasswordHash::new(account.password_hash())?;
+
+				if Scrypt.verify_password(password_hash, &salt).is_ok() {
+					Ok(Some(account))
+				} else {
+					Ok(None)
+				}
 			}
 		}
 	}
@@ -136,11 +143,13 @@ impl Account {
         &self.email
     }
 
-	/// The account password.
+	/// The account password, hashed with
+	/// scrypt, cannot compare directly.
 	#[inline]
-    pub fn password(&self) -> &[u8] {
+    pub fn password_hash(&self) -> &str {
         &self.password
     }
+
 	/// The account password salt to encrypt
 	/// and decrypt with scrypt.
 	#[inline]

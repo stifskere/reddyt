@@ -26,7 +26,7 @@ table "accounts" {
 	}
 
 	column "password" {
-		type = bytea
+		type = VARCHAR(150) // scrypt high level API hash length.
 		null = false
 		comment = "The encrypted and salted account password."
 	}
