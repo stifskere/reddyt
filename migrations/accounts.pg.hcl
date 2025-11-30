@@ -30,10 +30,4 @@ table "accounts" {
 		null = false
 		comment = "The encrypted and salted account password."
 	}
-
-	column "password_salt" {
-		type = VARCHAR(64)
-		null = false
-		comment = "SCRYPT password salt, 64 bytes in size per standard."
-	}
 }

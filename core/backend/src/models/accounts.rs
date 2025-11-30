@@ -56,10 +56,6 @@ pub struct Account {
 
 	/// The account password.
 	password: String,
-
-	/// The account password salt to encrypt
-	/// and decrypt with scrypt.
-	password_salt: String
 }
 
 
@@ -119,10 +115,8 @@ impl Account {
 					return Ok(None);
 				};
 
-				let salt = SaltString::from_b64(account.password_salt())?;
 				let password_hash = PasswordHash::new(account.password_hash())?;
-
-				if Scrypt.verify_password(password_hash, &salt).is_ok() {
+				if Scrypt.verify_password(&password, &password_hash).is_ok() {
 					Ok(Some(account))
 				} else {
 					Ok(None)
@@ -143,17 +137,10 @@ impl Account {
         &self.email
     }
 
-	/// The account password, hashed with
-	/// scrypt, cannot compare directly.
+	/// Account passowrd PHC, already contains
+	/// generated salt.
 	#[inline]
     pub fn password_hash(&self) -> &str {
         &self.password
-    }
-
-	/// The account password salt to encrypt
-	/// and decrypt with scrypt.
-	#[inline]
-	pub fn password_salt(&self) -> &str {
-        &self.password_salt
     }
 }
