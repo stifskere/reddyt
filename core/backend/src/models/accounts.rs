@@ -2,7 +2,7 @@ use scrypt::password_hash::rand_core::OsRng;
 use scrypt::password_hash::{Error as PasswordHashError, PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use scrypt::Scrypt;
 use serde::{Deserialize, Serialize};
-use sqlx::{query_as, PgPool, Error as SqlxError};
+use sqlx::{query, query_as, Error as SqlxError, PgPool};
 use sqlx::prelude::FromRow;
 use thiserror::Error;
 
@@ -124,6 +124,22 @@ impl Account {
 			}
 		}
 	}
+
+
+	/// Delete an account from a pre-selected model.
+	pub async fn delete(self, connection: &PgPool) -> Result<(), AccountError> {
+		query(r"
+			DELETE FROM accounts
+			WHERE id = $1
+			LIMIT 1
+		")
+			.bind(self.id)
+			.execute(connection)
+			.await?;
+
+		Ok(())
+	}
+
 
 	/// The primary key for this model.
 	#[inline]
